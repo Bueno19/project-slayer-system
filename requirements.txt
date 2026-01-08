@@ -3,3 +3,4 @@ flask_sqlalchemy
 python-telegram-bot
 requests
 gunicorn
+psycopg2-binary

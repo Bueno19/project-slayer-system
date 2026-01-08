@@ -6,8 +6,9 @@ from telegram.ext import ApplicationBuilder, ContextTypes, CommandHandler
 from models import app, db, User, TrainingLog, Quest
 import quest_system  # Importante: Usa a lógica de treino inteligente
 
-# --- CONFIGURAÇÃO ---
-TOKEN = "7948877311:AAE-tFj9XAD2xyB77V3LOMv4hEHPOxpoux8"
+# No teu bot.py
+TOKEN = "7948877311:AAE-tFj9XAD2xyB77V3LOMv4hEHPOxpoux8" # TEM DE ESTAR AQUI SE NÃO ESTÁ NO RENDER
+bot = telebot.TeleBot(TOKEN)
 
 logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
