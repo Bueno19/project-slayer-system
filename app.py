@@ -1,12 +1,16 @@
 from flask import Flask, render_template, request, jsonify
-from models import app, db, User, ShopItem, Inventory, Quest, DailyShop
+from models import app, db, User, ShopItem, Inventory, Quest, DailyShop, Title
 import quest_system
 import json
 import random
 from datetime import date
 import requests
+import os
 
-TELEGRAM_TOKEN = "7948877311:AAE-tFj9XAD2xyB77V3LOMv4hEHPOxpoux8"
+# CONFIGURAÇÃO DO TOKEN
+# Tenta pegar do ambiente (Render), senão usa o teu fixo
+TOKEN_SECRETO = "7948877311:AAE-tFj9XAD2xyB77V3LOMv4hEHPOxpoux8"
+TELEGRAM_TOKEN = os.getenv("TELEGRAM_TOKEN", TOKEN_SECRETO)
 
 def notificar(chat_id, msg):
     try: requests.post(f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage", data={"chat_id": chat_id, "text": msg, "parse_mode": "Markdown"})
@@ -14,7 +18,12 @@ def notificar(chat_id, msg):
 
 def get_daily_shop():
     hoje = date.today()
-    shop = DailyShop.query.filter_by(date=hoje).first()
+    # Tenta pegar a loja de hoje
+    try:
+        shop = DailyShop.query.filter_by(date=hoje).first()
+    except:
+        return [] # Se der erro no banco, retorna vazio
+
     if shop:
         ids = json.loads(shop.items_json)
         return ShopItem.query.filter(ShopItem.id.in_(ids)).all()
@@ -23,8 +32,11 @@ def get_daily_shop():
         if not all_items: return []
         selection = random.sample(all_items, k=min(len(all_items), 6))
         ids = [i.id for i in selection]
-        new_shop = DailyShop(date=hoje, items_json=json.dumps(ids))
+        
+        # Limpa dias velhos e salva o novo
         DailyShop.query.filter(DailyShop.date != hoje).delete()
+        new_shop = DailyShop(date=hoje, items_json=json.dumps(ids))
+        
         db.session.add(new_shop)
         db.session.commit()
         return selection
@@ -32,7 +44,7 @@ def get_daily_shop():
 @app.route('/')
 def dashboard():
     user = User.query.first()
-    if not user: return "Erro: Inicie o bot no Telegram"
+    if not user: return "<h1>Sistema Online! Inicie o bot no Telegram: /start</h1>"
     
     equipped = {
         'head': db.session.get(ShopItem, user.head_slot) if user.head_slot else None,
@@ -53,6 +65,7 @@ def dashboard():
     return render_template('index.html', player=user, equipped=equipped, quests=quests, 
                            loja=loja_dia, inventario=inv, xp_pct=xp_pct, titulos=user.titulos)
 
+# --- ROTAS DA API ---
 @app.route('/api/create_quest', methods=['POST'])
 def create_quest_api():
     user = User.query.first()
@@ -126,6 +139,40 @@ def add_stat(attr):
         db.session.commit()
         return jsonify({'success': True})
     return jsonify({'success': False})
+
+# --- FUNÇÃO MÁGICA DE AUTO-INSTALAÇÃO ---
+def inicializar_banco():
+    """Cria tabelas e popula itens se o banco estiver vazio"""
+    with app.app_context():
+        db.create_all() # Cria as tabelas no PostgreSQL
+        
+        # Verifica se já existem itens
+        if not ShopItem.query.first():
+            print(">>> BANCO VAZIO DETECTADO. INICIANDO POPULAÇÃO AUTOMÁTICA...")
+            # Copiamos a lógica do shop_stock.py aqui para garantir
+            items = [
+                ShopItem(nome="Poção de Cura", descricao="Recupera fadiga.", preco=100, icon="🧪", tipo="Consumivel", raridade="Comum"),
+                ShopItem(nome="Elixir de Energia", descricao="Boost de café.", preco=200, icon="⚡", tipo="Consumivel", raridade="Comum"),
+                ShopItem(nome="Ticket de Folga", descricao="Pula treino.", preco=800, icon="🎟️", tipo="Consumivel", raridade="Raro"),
+                ShopItem(nome="Bandana de Novato", descricao="Foco básico.", preco=300, icon="🤕", tipo="Head", bonus_attr="inteligencia", bonus_val=2, raridade="Comum"),
+                ShopItem(nome="Capacete Tático", descricao="Proteção sólida.", preco=1200, icon="⛑️", tipo="Head", bonus_attr="vitalidade", bonus_val=5, raridade="Incomum"),
+                ShopItem(nome="Camisa de Treino", descricao="Leve.", preco=400, icon="👕", tipo="Body", bonus_attr="agilidade", bonus_val=2, raridade="Comum"),
+                ShopItem(nome="Colete Pesado", descricao="Resistência.", preco=1500, icon="🦺", tipo="Body", bonus_attr="forca", bonus_val=5, raridade="Incomum"),
+                ShopItem(nome="Tênis Velhos", descricao="Básico.", preco=300, icon="👟", tipo="Legs", bonus_attr="agilidade", bonus_val=1, raridade="Comum"),
+                ShopItem(nome="Luvas de Boxe", descricao="Impacto.", preco=500, icon="🥊", tipo="Weapon", bonus_attr="forca", bonus_val=3, raridade="Comum"),
+                ShopItem(nome="Adaga de Rasaka", descricao="Lendário.", preco=5000, icon="🗡️", tipo="Weapon", bonus_attr="agilidade", bonus_val=12, raridade="Epico"),
+            ]
+            titles = [
+                Title(nome="O Despertado", descricao="Iniciou o sistema.", bonus_attr="vitalidade", bonus_val=1),
+                Title(nome="Lobo Solitário", descricao="Treino constante.", bonus_attr="agilidade", bonus_val=5),
+            ]
+            db.session.add_all(items)
+            db.session.add_all(titles)
+            db.session.commit()
+            print(">>> SISTEMA POPULADO COM SUCESSO.")
+
+# Executa a verificação ao iniciar o app
+inicializar_banco()
 
 if __name__ == "__main__":
     app.run(host='0.0.0.0', port=5000, debug=True)
