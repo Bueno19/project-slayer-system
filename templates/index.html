@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>MONARCH SYSTEM</title>
+    <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700;800&display=swap" rel="stylesheet">
+    
+    <style>
+        :root {
+            --primary: #00e5ff; /* Azul Neon */
+            --secondary: #0077aa;
+            --gold: #ffd700; /* Dourado */
+            --danger: #ff2a2a;
+            --bg-dark: #050505;
+            --glass: rgba(10, 25, 40, 0.75);
+            --glass-border: rgba(0, 229, 255, 0.3);
+            --glass-hover: rgba(0, 229, 255, 0.15);
+        }
+
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+        body {
+            background-color: var(--bg-dark); color: var(--primary);
+            font-family: 'Rajdhani', sans-serif; margin: 0; padding: 15px;
+            min-height: 100vh;
+            /* Fundo Tecnológico Monarca (O teu preferido) */
+            background-image: 
+                linear-gradient(rgba(0, 10, 20, 0.9), rgba(0, 0, 0, 0.95)),
+                repeating-linear-gradient(0deg, transparent, transparent 1px, rgba(0, 229, 255, 0.05) 1px, rgba(0, 229, 255, 0.05) 2px);
+            background-size: cover; overflow-x: hidden;
+            padding-bottom: 80px;
+        }
+
+        /* --- ANIMAÇÕES --- */
+        @keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes glowPulse { 0% { box-shadow: 0 0 5px var(--primary); } 50% { box-shadow: 0 0 20px var(--primary); } 100% { box-shadow: 0 0 5px var(--primary); } }
+
+        /* --- HEADER --- */
+        .header { text-align: center; margin-bottom: 20px; position: relative; animation: slideUp 0.5s ease-out; }
+        .header::after { content: ''; display: block; width: 80px; height: 2px; background: var(--primary); margin: 10px auto; box-shadow: 0 0 15px var(--primary); }
+        .rank-title { font-size: 42px; font-weight: 800; color: var(--gold); text-shadow: 0 0 20px rgba(255, 215, 0, 0.6); line-height: 1; }
+        .player-sub { font-size: 12px; letter-spacing: 4px; color: #888; text-transform: uppercase; }
+        .gold-badge { position: absolute; top:0; right:0; color: var(--gold); font-weight: bold; background: rgba(255,215,0,0.1); padding: 5px 10px; border: 1px solid var(--gold); border-radius: 4px; }
+
+        /* --- PAINÉIS --- */
+        .panel {
+            background: var(--glass); border: 1px solid var(--glass-border);
+            border-radius: 8px; padding: 15px; margin-bottom: 20px;
+            backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+            transition: all 0.3s ease; animation: slideUp 0.7s ease-out;
+        }
+        .panel:hover { border-color: var(--primary); box-shadow: 0 0 20px rgba(0, 229, 255, 0.2); }
+
+        /* --- BARRA DE XP --- */
+        .xp-wrapper { position: relative; height: 24px; background: rgba(0,0,0,0.6); border: 1px solid #444; transform: skewX(-20deg); border-radius: 4px; overflow: hidden; margin-top: 10px; }
+        .xp-fill { height: 100%; background: linear-gradient(90deg, var(--secondary), var(--primary)); width: {{ xp_pct }}%; box-shadow: 0 0 20px var(--primary); transition: width 1s ease-in-out; }
+        .xp-text { position: absolute; width: 100%; text-align: center; top: 2px; color: #fff; font-size: 12px; font-weight: bold; transform: skewX(20deg); text-shadow: 1px 1px 2px #000; }
+
+        /* --- SLOTS DE EQUIPAMENTO --- */
+        .equip-grid { display: flex; gap: 15px; justify-content: center; margin-bottom: 20px; }
+        .equip-slot {
+            width: 65px; height: 65px;
+            background: rgba(0,0,0,0.3); border: 2px dashed var(--glass-border);
+            border-radius: 8px; display: flex; flex-direction: column; align-items: center; justify-content: center;
+            font-size: 24px; color: #555; position: relative; transition: 0.3s;
+        }
+        .equip-slot.equipped { border: 2px solid var(--gold); color: #fff; text-shadow: 0 0 10px var(--gold); background: linear-gradient(145deg, rgba(255,215,0,0.1), transparent); animation: glowPulse 3s infinite; }
+        .slot-label { position: absolute; bottom: -18px; font-size: 10px; color: #888; text-transform: uppercase; }
+        .item-emoji { font-size: 28px; }
+
+        /* --- GRID DE ITENS (LOJA E INV) --- */
+        .inv-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; }
+        .inv-slot {
+            aspect-ratio: 1; background: rgba(0,0,0,0.4); border: 1px solid var(--glass-border);
+            border-radius: 6px; display: flex; flex-direction: column; align-items: center; justify-content: center;
+            cursor: pointer; position: relative; transition: 0.3s;
+        }
+        .inv-slot:hover { border-color: var(--primary); box-shadow: 0 0 15px var(--primary); transform: translateY(-3px); }
+        .inv-icon { font-size: 28px; filter: drop-shadow(0 0 5px rgba(255,255,255,0.3)); }
+        .qtd-badge { position: absolute; bottom: 3px; right: 3px; font-size: 10px; background: #222; padding: 1px 4px; border-radius: 4px; color: #fff; border: 1px solid #444; }
+
+        /* --- QUESTS --- */
+        .quest-card { border-left: 3px solid var(--danger); background: linear-gradient(90deg, rgba(255,42,42,0.05), transparent); }
+        .task-row { display: flex; align-items: center; margin: 12px 0; background: rgba(0,0,0,0.2); padding: 8px; border-radius: 4px; }
+        .neon-checkbox {
+            width: 24px; height: 24px; border: 2px solid var(--glass-border);
+            border-radius: 4px; margin-right: 12px; display: flex; align-items: center; justify-content: center;
+            cursor: pointer; transition: 0.3s; background: rgba(0,0,0,0.5); flex-shrink: 0;
+        }
+        .neon-checkbox:hover { border-color: var(--primary); }
+        .neon-checkbox.checked { background: var(--primary); border-color: var(--primary); box-shadow: 0 0 10px var(--primary); }
+        .neon-checkbox.checked::after { content: '✓'; color: #000; font-weight: bold; font-size: 16px; }
+        .task-progress { margin-left: auto; font-size: 12px; color: var(--primary); font-weight: bold; }
+
+        /* --- LOJA --- */
+        .shop-timer { text-align: center; color: #888; font-size: 12px; margin-bottom: 15px; border-bottom: 1px solid var(--glass-border); padding-bottom: 5px; }
+        .shop-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 10px; }
+        .shop-card {
+            background: rgba(0,0,0,0.4); border: 1px solid var(--glass-border); padding: 15px;
+            border-radius: 6px; text-align: center; transition: 0.3s; display: flex; flex-direction: column; justify-content: space-between;
+        }
+        .shop-card:hover { border-color: var(--gold); transform: translateY(-5px); }
+        /* Raridades */
+        .rarity-Comum { border-bottom: 2px solid #888; }
+        .rarity-Incomum { border-bottom: 2px solid #00ff00; }
+        .rarity-Raro { border-bottom: 2px solid #00e5ff; }
+        .rarity-Epico { border-bottom: 2px solid #a335ee; }
+        .rarity-Lendario { border-bottom: 2px solid #ffd700; }
+
+        /* --- BOTÕES --- */
+        .btn {
+            width: 100%; padding: 12px; background: transparent; border: 1px solid var(--primary);
+            color: var(--primary); font-family: 'Rajdhani'; font-weight: 700; text-transform: uppercase;
+            cursor: pointer; transition: all 0.3s; font-size: 16px; clip-path: polygon(5% 0, 100% 0, 100% 80%, 95% 100%, 0 100%, 0 20%);
+        }
+        .btn:hover { background: var(--glass-hover); box-shadow: 0 0 15px var(--primary); text-shadow: 0 0 5px var(--primary); }
+        .btn:active { transform: scale(0.98); }
+        .btn-gold { border-color: var(--gold); color: var(--gold); }
+        .btn-gold:hover { background: rgba(255, 215, 0, 0.1); box-shadow: 0 0 15px var(--gold); text-shadow: 0 0 5px var(--gold); }
+        .btn-danger { border-color: var(--danger); color: var(--danger); }
+        .btn-danger:hover { background: rgba(255, 42, 42, 0.1); box-shadow: 0 0 15px var(--danger); }
+
+        /* --- TABS --- */
+        .tabs { position: fixed; bottom: 0; left: 0; width: 100%; background: #050505; border-top: 1px solid var(--glass-border); display: flex; z-index: 100; padding-bottom: env(safe-area-inset-bottom); }
+        .tab-btn {
+            flex: 1; min-width: 90px; background: rgba(0,0,0,0.5); border: 1px solid #333;
+            color: #666; padding: 12px; cursor: pointer; text-transform: uppercase;
+            font-family: 'Rajdhani'; font-weight: 700; transition: all 0.3s;
+            clip-path: polygon(10% 0, 100% 0, 100% 80%, 90% 100%, 0 100%, 0 20%);
+        }
+        .tab-btn.active { background: var(--glass-hover); border-color: var(--primary); color: var(--primary); text-shadow: 0 0 8px var(--primary); }
+        .tab-content { display: none; animation: slideUp 0.3s ease-in; }
+        .tab-content.active { display: block; }
+
+        /* --- TÍTULOS --- */
+        details { margin-top: 15px; border-top: 1px solid #333; padding-top: 10px; cursor: pointer; }
+        summary { color: #888; font-size: 12px; outline: none; list-style: none; display: flex; justify-content: space-between; }
+        summary::after { content: '▼'; font-size: 10px; }
+        details[open] summary::after { content: '▲'; }
+        .title-tag { display: inline-block; font-size: 10px; background: #222; padding: 2px 6px; margin: 3px; border-radius: 4px; border: 1px solid #444; color: #aaa; }
+
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <div>
+            <div class="player-sub">SYSTEM INTERFACE</div>
+            <div style="font-weight: bold; font-size: 18px; color: #fff;">{{ player.username }}</div>
+        </div>
+        <div class="rank-title">{{ player.rank }}</div>
+        <div class="gold-badge">{{ player.gold }} G</div>
+    </div>
+
+    <div id="status" class="tab-content active">
+        <div class="panel">
+            <div style="display: flex; justify-content: space-between; font-size: 12px; color: #fff; margin-bottom: 5px;">
+                <span>NÍVEL {{ player.nivel }}</span>
+                <span>{{ player.xp_atual }} / {{ player.xp_next_level }} XP</span>
+            </div>
+            <div class="xp-wrapper"><div class="xp-fill"></div><div class="xp-text">{{ xp_pct }}%</div></div>
+            
+            {% if player.pontos_livres > 0 %}
+            <div style="text-align: center; color: var(--gold); margin: 15px 0; font-weight: bold; animation: glowPulse 2s infinite; border: 1px dashed var(--gold); padding: 5px;">
+                ⚠ {{ player.pontos_livres }} PONTOS DISPONÍVEIS
+            </div>
+            {% endif %}
+
+            <details>
+                <summary>TÍTULOS E BUFFS</summary>
+                <div style="margin-top: 10px;">
+                    {% if titulos %}
+                        {% for t in titulos %}
+                        <span class="title-tag">{{ t.nome }} (+{{t.bonus_val}} {{t.bonus_attr|upper}})</span>
+                        {% endfor %}
+                    {% else %}
+                        <div style="color:#555; font-size:10px;">Nenhum título adquirido.</div>
+                    {% endif %}
+                </div>
+            </details>
+        </div>
+
+        <div class="equip-grid">
+            <div class="equip-slot {{ 'equipped' if equipped.head else '' }}">
+                <div class="item-emoji">{{ equipped.head.icon if equipped.head else '' }}</div>
+                <span class="slot-label">Head</span>
+            </div>
+            <div class="equip-slot {{ 'equipped' if equipped.body else '' }}">
+                <div class="item-emoji">{{ equipped.body.icon if equipped.body else '' }}</div>
+                <span class="slot-label">Body</span>
+            </div>
+            <div class="equip-slot {{ 'equipped' if equipped.legs else '' }}">
+                <div class="item-emoji">{{ equipped.legs.icon if equipped.legs else '' }}</div>
+                <span class="slot-label">Legs</span>
+            </div>
+            <div class="equip-slot {{ 'equipped' if equipped.weapon else '' }}" style="border-color: var(--danger);">
+                <div class="item-emoji">{{ equipped.weapon.icon if equipped.weapon else '⚔️' }}</div>
+                <span class="slot-label" style="color: var(--danger)">Weapon</span>
+            </div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; text-align: center; background: rgba(0,0,0,0.3); padding: 15px; border-radius: 8px;">
+            <div style="display:flex; justify-content:space-between;"><div>FOR</div> <div style="color:#fff; font-weight:bold;">{{ player.forca }} {% if player.pontos_livres > 0 %}<span onclick="addPoint('forca')" style="color:var(--gold); cursor:pointer;">[+]</span>{% endif %}</div></div>
+            <div style="display:flex; justify-content:space-between;"><div>AGI</div> <div style="color:#fff; font-weight:bold;">{{ player.agilidade }} {% if player.pontos_livres > 0 %}<span onclick="addPoint('agilidade')" style="color:var(--gold); cursor:pointer;">[+]</span>{% endif %}</div></div>
+            <div style="display:flex; justify-content:space-between;"><div>VIT</div> <div style="color:#fff; font-weight:bold;">{{ player.vitalidade }} {% if player.pontos_livres > 0 %}<span onclick="addPoint('vitalidade')" style="color:var(--gold); cursor:pointer;">[+]</span>{% endif %}</div></div>
+            <div style="display:flex; justify-content:space-between;"><div>INT</div> <div style="color:#fff; font-weight:bold;">{{ player.inteligencia }} {% if player.pontos_livres > 0 %}<span onclick="addPoint('inteligencia')" style="color:var(--gold); cursor:pointer;">[+]</span>{% endif %}</div></div>
+        </div>
+    </div>
+
+    <div id="quests" class="tab-content">
+        <div class="panel">
+            <button class="btn btn-primary" style="margin-bottom: 20px; padding: 15px; font-size: 18px;" onclick="createDaily()">
+                🎲 GERAR TREINO DE COMBATE
+            </button>
+
+            {% if quests %}
+                {% for quest in quests %}
+                <div class="panel quest-card">
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <h3 style="margin: 0; color: var(--danger); text-transform: uppercase;">{{ quest.titulo }}</h3>
+                        <span style="border: 1px solid var(--danger); color: var(--danger); padding: 2px 6px; font-size: 10px; border-radius: 4px;">{{ quest.dificuldade }}</span>
+                    </div>
+                    <div style="margin-top: 15px;">
+                        {% for nome, val in quest.tasks.items() %}
+                        {% set is_checked = val[0] >= val[1] %}
+                        <div class="task-row">
+                            <div class="neon-checkbox {{ 'checked' if is_checked else '' }}" 
+                                 onclick="updateTask({{ quest.id }}, '{{ nome }}', {{ val[0] + 1 }})"></div>
+                            <div style="flex: 1; font-size: 14px;">{{ nome }}</div>
+                            <div class="task-progress">{{ val[0] }}/{{ val[1] }}</div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    <div style="margin-top: 15px; display: flex; justify-content: space-between; align-items: center;">
+                         <div style="font-size: 11px; color: var(--gold);">Recompensa: {{ quest.xp_reward }} XP | {{ quest.gold_reward }} G</div>
+                        <button class="btn btn-danger" style="width: auto; padding: 8px 20px;" onclick="finishQuest({{ quest.id }})">CONCLUIR</button>
+                    </div>
+                </div>
+                {% endfor %}
+            {% else %}
+                <div style="text-align: center; color: #888; padding: 30px;">Nenhuma missão ativa. Gere uma nova!</div>
+            {% endif %}
+        </div>
+    </div>
+
+    <div id="shop" class="tab-content">
+        <div class="panel">
+            <h3 style="margin-top: 0; border-bottom: 1px solid var(--gold); padding-bottom: 10px; color: var(--gold);">MERCADO DO SISTEMA</h3>
+            <div class="shop-timer">RENOVA EM: <span id="countdown" style="color:#fff; font-weight:bold;">--:--:--</span></div>
+            <div class="shop-grid">
+                {% if loja %}
+                    {% for item in loja %}
+                    <div class="shop-card rarity-{{ item.raridade }}">
+                        <div style="font-size: 40px; margin-bottom: 10px;">{{ item.icon }}</div>
+                        <div style="font-weight: bold; margin-bottom: 5px; color:#fff;">{{ item.nome }}</div>
+                        <div style="font-size: 11px; color: #aaa; height: 30px; overflow: hidden;">{{ item.descricao }}</div>
+                        <div style="color: var(--gold); font-weight: bold; margin: 10px 0; font-size: 18px;">{{ item.preco }} G</div>
+                        <button class="btn btn-gold" onclick="buyItem({{ item.id }}, '{{ item.nome }}')">COMPRAR</button>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <div style="text-align:center; padding:20px; color:#666; grid-column: 1/-1;">LOJA FECHADA OU VAZIA<br>(Execute shop_stock.py)</div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <div id="inventory" class="tab-content">
+        <div class="panel">
+            <h3 style="margin-top: 0; border-bottom: 1px solid var(--glass-border); padding-bottom: 10px;">SUA MOCHILA</h3>
+            <div class="inv-grid">
+                {% for slot in inventario %}
+                <div class="inv-slot" onclick="equipItem({{ slot.id }}, '{{ slot.item.nome }}')">
+                    <div class="inv-icon">{{ slot.item.icon }}</div>
+                    <span class="qtd-badge">{{ slot.quantidade }}</span>
+                </div>
+                {% endfor %}
+                {% for i in range(20 - inventario|length) %}
+                <div class="inv-slot" style="opacity: 0.1; cursor: default;"></div>
+                {% endfor %}
+            </div>
+            <div style="text-align: center; font-size: 12px; color: #888; margin-top: 15px;">Toque num item para Equipar ou Usar.</div>
+        </div>
+    </div>
+
+    <div class="tabs">
+        <button class="tab-btn active" onclick="openTab('status')">PERFIL</button>
+        <button class="tab-btn" onclick="openTab('quests')">TREINO</button>
+        <button class="tab-btn" onclick="openTab('shop')">LOJA</button>
+        <button class="tab-btn" onclick="openTab('inventory')">MOCHILA</button>
+    </div>
+
+    <script>
+        // --- TIMER DA LOJA ---
+        function updateTimer() {
+            const now = new Date();
+            const tmr = new Date(now); tmr.setHours(24,0,0,0);
+            const diff = tmr - now;
+            const h = Math.floor((diff/(1000*60*60))%24);
+            const m = Math.floor((diff/(1000*60))%60);
+            const s = Math.floor((diff/1000)%60);
+            document.getElementById('countdown').innerText = `${h}h ${m}m ${s}s`;
+        }
+        setInterval(updateTimer, 1000); updateTimer();
+
+        // --- SISTEMA ---
+        function openTab(name) {
+            document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            document.getElementById(name).classList.add('active');
+            event.target.classList.add('active');
+        }
+
+        function api(url, data={}) { return fetch(url, { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(data) }).then(r => r.json()); }
+        
+        function createDaily() { 
+            if(!confirm("Gerar nova missão de treino?")) return;
+            api('/api/create_quest').then(d => {
+                if(d.success) location.reload();
+                else alert("Erro ao gerar quest");
+            });
+        }
+        
+        function updateTask(qid, name, val) { api('/api/update_task', {quest_id: qid, task_name: name, val: val}).then(() => location.reload()); }
+        function finishQuest(id) { if(confirm("Concluir missão?")) api(`/api/finish_quest/${id}`).then(d => { if(d.success) location.reload(); else alert("Complete tudo primeiro!"); }); }
+        function buyItem(id, nome) { if(confirm(`Comprar ${nome}?`)) api(`/api/buy/${id}`).then(d => { if(d.success) location.reload(); else alert("Gold insuficiente!"); }); }
+        function equipItem(id, nome) { if(confirm(`Equipar/Usar ${nome}?`)) api(`/api/equip/${id}`).then(() => location.reload()); }
+        function addPoint(attr) { api(`/api/add_stat/${attr}`).then(() => location.reload()); }
+    </script>
+</body>
+</html>

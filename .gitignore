@@ -1,0 +1,12 @@
+# Ignorar banco de dados local (o servidor vai criar um novo limpo)
+*.db
+sistema_rpg.db
+
+# Ignorar arquivos temporários do Python
+__pycache__/
+*.pyc
+
+# Ignorar ambiente virtual (se tiveres criado um)
+venv/
+env/
+.env
