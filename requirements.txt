@@ -1,6 +1,7 @@
 flask
 flask_sqlalchemy
-python-telegram-bot
+python-telegram-bot[job-queue]
 requests
 gunicorn
 psycopg2-binary
+pytz
